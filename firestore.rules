@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Products: anyone can browse products, store admin manages products
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Categories: anyone can view categories, store admin manages categories
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Orders: customers can submit orders, admin manages orders
+    match /orders/{orderId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Store settings: website info, contact numbers, notices, delivery fees
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Coupons: discount codes
+    match /coupons/{couponId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Hero banners
+    match /banners/{bannerId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}

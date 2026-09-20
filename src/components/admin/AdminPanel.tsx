@@ -218,6 +218,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-[#e8b04b] text-[#111]">
               ADMIN
             </span>
+            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-950/60 border border-emerald-500/40 rounded-full text-emerald-400 text-[10px] font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>ক্লাউড সিঙ্ক সক্রিয়</span>
+            </div>
           </div>
         </div>
 
@@ -288,8 +292,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
           <div className="pt-6 mt-6 border-t border-neutral-100">
             <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200 text-xs">
-              <div className="font-bold text-neutral-800">ওয়েবসাইট লাইভ ভিউ</div>
-              <div className="text-[11px] text-neutral-500 mt-0.5">সব পরিবর্তন সাথে সাথে সেভ হয়</div>
+              <div className="flex items-center gap-1.5 font-bold text-neutral-800">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                <span>ক্লাউড ডাটাবেস সক্রিয়</span>
+              </div>
+              <div className="text-[11px] text-neutral-500 mt-1">মোবাইল ও পিসিতে স্বয়ংক্রিয়ভাবে রিয়েল-টাইম সিঙ্ক হয়</div>
               <button
                 onClick={onCloseAdmin}
                 className="mt-2.5 w-full py-1.5 bg-[#111] text-white text-[11px] font-bold rounded hover:bg-[#e8b04b] hover:text-[#111] transition-colors"

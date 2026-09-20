@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "products": {
+      "title": "Products",
+      "description": "Store inventory products catalog",
+      "fields": {
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "oldPrice": { "type": "number" },
+        "image": { "type": "string" },
+        "description": { "type": "string" },
+        "sizes": { "type": "array" },
+        "inStock": { "type": "boolean" },
+        "isSale": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" }
+      }
+    },
+    "categories": {
+      "title": "Categories",
+      "description": "Product categories",
+      "fields": {
+        "title": { "type": "string" },
+        "categoryKey": { "type": "string" },
+        "image": { "type": "string" }
+      }
+    },
+    "orders": {
+      "title": "Orders",
+      "description": "Customer purchase orders",
+      "fields": {
+        "orderNumber": { "type": "string" },
+        "customer": { "type": "object" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "shippingCost": { "type": "number" },
+        "discount": { "type": "number" },
+        "total": { "type": "number" },
+        "status": { "type": "string" },
+        "paymentStatus": { "type": "string" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Global store settings and contact info",
+      "fields": {
+        "siteName": { "type": "string" },
+        "phone": { "type": "string" },
+        "adminPin": { "type": "string" }
+      }
+    },
+    "coupons": {
+      "title": "Coupons",
+      "description": "Discount vouchers and promotional codes",
+      "fields": {
+        "code": { "type": "string" },
+        "discountPercent": { "type": "number" },
+        "minOrderAmount": { "type": "number" },
+        "isActive": { "type": "boolean" }
+      }
+    },
+    "banners": {
+      "title": "Banners",
+      "description": "Homepage hero sliders and promotional banners",
+      "fields": {
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "image": { "type": "string" }
+      }
+    }
+  }
+}

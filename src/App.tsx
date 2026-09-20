@@ -23,6 +23,30 @@ import {
 } from './data/products';
 import { Product, CartItem, Order, CategoryItem, SiteSettings, Coupon, OrderStatus, HeroBanner, PaymentStatus } from './types';
 import { ShieldCheck, ArrowLeft, Truck } from 'lucide-react';
+import {
+  subscribeProducts,
+  syncSaveProduct,
+  syncDeleteProduct,
+  subscribeCategories,
+  syncSaveCategory,
+  syncDeleteCategory,
+  subscribeOrders,
+  syncSaveOrder,
+  syncUpdateOrderStatus,
+  syncUpdatePaymentStatus,
+  syncDeleteOrder,
+  subscribeSettings,
+  syncSaveSettings,
+  subscribeAdminPin,
+  syncSaveAdminPin,
+  subscribeCoupons,
+  syncSaveCoupon,
+  syncDeleteCoupon,
+  subscribeBanners,
+  syncSaveBanner,
+  syncDeleteBanner,
+  seedFirestoreIfEmpty,
+} from './services/firestoreService';
 
 export default function App() {
   // 1. PRODUCTS STATE (with persistence)
@@ -180,6 +204,66 @@ export default function App() {
     }
   }, [adminPin]);
 
+  // Real-time synchronization with Firebase Cloud Firestore
+  useEffect(() => {
+    // 1. Initial seed if Firestore is fresh
+    seedFirestoreIfEmpty({
+      products,
+      categories,
+      settings,
+      coupons,
+      banners: heroBanners,
+      adminPin,
+    });
+
+    // 2. Real-time listeners across all devices
+    const unsubProducts = subscribeProducts((cloudProducts) => {
+      setProducts(cloudProducts);
+    });
+
+    const unsubCategories = subscribeCategories((cloudCategories) => {
+      if (cloudCategories.length > 0) {
+        setCategories(cloudCategories);
+      }
+    });
+
+    const unsubOrders = subscribeOrders((cloudOrders) => {
+      setOrders(cloudOrders);
+    });
+
+    const unsubSettings = subscribeSettings((cloudSettings) => {
+      setSettings((prev) => ({ ...prev, ...cloudSettings }));
+    });
+
+    const unsubAdminPin = subscribeAdminPin((cloudPin) => {
+      if (cloudPin) {
+        setAdminPin(cloudPin);
+      }
+    });
+
+    const unsubCoupons = subscribeCoupons((cloudCoupons) => {
+      if (cloudCoupons.length > 0) {
+        setCoupons(cloudCoupons);
+      }
+    });
+
+    const unsubBanners = subscribeBanners((cloudBanners) => {
+      if (cloudBanners.length > 0) {
+        setHeroBanners(cloudBanners);
+      }
+    });
+
+    return () => {
+      unsubProducts();
+      unsubCategories();
+      unsubOrders();
+      unsubSettings();
+      unsubAdminPin();
+      unsubCoupons();
+      unsubBanners();
+    };
+  }, []);
+
   // Handle hash changes for admin routing
   useEffect(() => {
     const handleHashChange = () => {
@@ -331,87 +415,119 @@ export default function App() {
   // Products
   const handleAddProduct = (newProduct: Product) => {
     setProducts((prev) => [newProduct, ...prev]);
+    syncSaveProduct(newProduct);
   };
 
   const handleUpdateProduct = (updated: Product) => {
     setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    syncSaveProduct(updated);
   };
 
   const handleDeleteProduct = (productId: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== productId));
+    syncDeleteProduct(productId);
   };
 
   // Orders
   const handleOrderCreated = (newOrder: Order) => {
     setOrders((prev) => [newOrder, ...prev]);
+    syncSaveOrder(newOrder);
   };
 
   const handleUpdateOrderStatus = (orderId: string, status: OrderStatus) => {
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status } : o))
     );
+    syncUpdateOrderStatus(orderId, status);
   };
 
   const handleUpdatePaymentStatus = (orderId: string, paymentStatus: PaymentStatus) => {
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, paymentStatus } : o))
     );
+    syncUpdatePaymentStatus(orderId, paymentStatus);
   };
 
   const handleDeleteOrder = (orderId: string) => {
     setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    syncDeleteOrder(orderId);
   };
 
   // Categories
   const handleAddCategory = (newCat: CategoryItem) => {
     setCategories((prev) => [...prev, newCat]);
+    syncSaveCategory(newCat);
   };
 
   const handleUpdateCategory = (updatedCat: CategoryItem) => {
     setCategories((prev) =>
       prev.map((c) => (c.id === updatedCat.id ? updatedCat : c))
     );
+    syncSaveCategory(updatedCat);
   };
 
   const handleDeleteCategory = (categoryId: string) => {
     setCategories((prev) => prev.filter((c) => c.id !== categoryId));
+    syncDeleteCategory(categoryId);
   };
 
   // Settings
   const handleUpdateSettings = (newSettings: Partial<SiteSettings>) => {
-    setSettings((prev) => ({ ...prev, ...newSettings }));
+    setSettings((prev) => {
+      const updated = { ...prev, ...newSettings };
+      syncSaveSettings(updated);
+      return updated;
+    });
+  };
+
+  // Admin PIN
+  const handleUpdateAdminPin = (newPin: string) => {
+    setAdminPin(newPin);
+    syncSaveAdminPin(newPin);
   };
 
   // Coupons
   const handleAddCoupon = (newCoupon: Coupon) => {
     setCoupons((prev) => [newCoupon, ...prev]);
+    syncSaveCoupon(newCoupon);
   };
 
   const handleToggleCoupon = (couponId: string) => {
     setCoupons((prev) =>
-      prev.map((c) => (c.id === couponId ? { ...c, isActive: !c.isActive } : c))
+      prev.map((c) => {
+        if (c.id === couponId) {
+          const updated = { ...c, isActive: !c.isActive };
+          syncSaveCoupon(updated);
+          return updated;
+        }
+        return c;
+      })
     );
   };
 
   const handleDeleteCoupon = (couponId: string) => {
     setCoupons((prev) => prev.filter((c) => c.id !== couponId));
+    syncDeleteCoupon(couponId);
   };
 
   // Hero Banners
   const handleAddBanner = (newBanner: HeroBanner) => {
     setHeroBanners((prev) => [...prev, newBanner]);
+    syncSaveBanner(newBanner);
   };
 
   const handleUpdateBanner = (updated: HeroBanner) => {
     setHeroBanners((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+    syncSaveBanner(updated);
   };
 
   const handleDeleteBanner = (bannerId: string) => {
     setHeroBanners((prev) => prev.filter((b) => b.id !== bannerId));
+    syncDeleteBanner(bannerId);
   };
 
   // Restore all data
-  const handleRestoreAllData = (data: {
+  const handleRestoreAllData = async (data: {
     products: Product[];
     orders: Order[];
     categories: CategoryItem[];
@@ -427,10 +543,18 @@ export default function App() {
     if (data.banners) {
       setHeroBanners(data.banners);
     }
+    for (const p of data.products) await syncSaveProduct(p);
+    for (const c of data.categories) await syncSaveCategory(c);
+    for (const o of data.orders) await syncSaveOrder(o);
+    for (const cp of data.coupons) await syncSaveCoupon(cp);
+    if (data.banners) {
+      for (const b of data.banners) await syncSaveBanner(b);
+    }
+    await syncSaveSettings(data.settings);
   };
 
   // Reset to factory defaults
-  const handleResetToDefaults = () => {
+  const handleResetToDefaults = async () => {
     setProducts(INITIAL_PRODUCTS);
     setOrders(DEFAULT_ORDERS);
     setCategories(INITIAL_CATEGORIES);
@@ -438,6 +562,13 @@ export default function App() {
     setCoupons(DEFAULT_COUPONS);
     setHeroBanners(DEFAULT_HERO_BANNERS);
     setAdminPin('admin123');
+    for (const p of INITIAL_PRODUCTS) await syncSaveProduct(p);
+    for (const c of INITIAL_CATEGORIES) await syncSaveCategory(c);
+    for (const o of DEFAULT_ORDERS) await syncSaveOrder(o);
+    for (const cp of DEFAULT_COUPONS) await syncSaveCoupon(cp);
+    for (const b of DEFAULT_HERO_BANNERS) await syncSaveBanner(b);
+    await syncSaveSettings(DEFAULT_SETTINGS);
+    await syncSaveAdminPin('admin123');
     alert('সকল ডেটা সফলভাবে ডিফল্ট অবস্থায় রিসেট করা হয়েছে!');
   };
 
@@ -476,7 +607,7 @@ export default function App() {
           }
         }}
         adminPin={adminPin}
-        onUpdateAdminPin={setAdminPin}
+        onUpdateAdminPin={handleUpdateAdminPin}
         isAuthenticated={isAdminAuthenticated}
         onSetAuthenticated={setIsAdminAuthenticated}
       />
