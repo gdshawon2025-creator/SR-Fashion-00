@@ -108,13 +108,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       onSetAuthenticated(true);
       setLoginError('');
     } else {
-      setLoginError('ভুল পিন কোড! ডিফল্ট পিন হলো: admin123');
+      setLoginError('ভুল পিন কোড! সঠিক পিন দিয়ে চেষ্টা করুন।');
     }
-  };
-
-  const handleQuickDemoLogin = () => {
-    onSetAuthenticated(true);
-    setLoginError('');
   };
 
   const pendingOrdersCount = orders.filter((o) => o.status === 'Pending').length;
@@ -161,15 +156,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 placeholder="পিন লিখুন..."
                 className="w-full text-center tracking-widest text-lg px-4 py-2.5 border border-neutral-300 rounded-lg focus:border-[#111] outline-none font-mono"
               />
-              <div className="mt-1.5 flex items-center justify-between text-[11px] text-neutral-400">
-                <span>ডিফল্ট পিন: <strong>admin123</strong></span>
-                <button
-                  type="button"
-                  onClick={() => setInputPin(adminPin)}
-                  className="text-blue-600 hover:underline cursor-pointer"
-                >
-                  অটো ফিল পিন
-                </button>
+              <div className="mt-1.5 text-[11px] text-neutral-400">
+                <span>ডিফল্ট পিন: <strong>admin123</strong> (প্রয়োজনে অ্যাডমিন সেটিংস থেকে পরিবর্তন করা যায়)</span>
               </div>
             </div>
 
@@ -178,20 +166,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               className="w-full py-3 bg-[#111] hover:bg-[#e8b04b] hover:text-[#111] text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-colors cursor-pointer shadow-md"
             >
               লগইন করুন (Enter Dashboard)
-            </button>
-
-            <div className="relative my-3 text-center">
-              <span className="bg-white px-2 text-[11px] text-neutral-400 relative z-10">অথবা</span>
-              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-neutral-200" />
-            </div>
-
-            {/* ONE-CLICK FAST LOGIN */}
-            <button
-              type="button"
-              onClick={handleQuickDemoLogin}
-              className="w-full py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-semibold text-xs rounded-lg transition-colors cursor-pointer"
-            >
-              ⚡ ওয়ান-ক্লিক সরাসরি ড্যাশবোর্ডে প্রবেশ (Quick Access)
             </button>
           </form>
         </div>
