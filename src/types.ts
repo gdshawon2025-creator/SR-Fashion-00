@@ -81,6 +81,7 @@ export interface SiteSettings {
   freeDeliveryThreshold: number;
   bkashNumber?: string;
   nagadNumber?: string;
+  whatsappNumber?: string;
 }
 
 export interface Coupon {

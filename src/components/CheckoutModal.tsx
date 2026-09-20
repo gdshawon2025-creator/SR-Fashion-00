@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CheckCircle, Truck, Tag, Check, AlertCircle, Copy, CreditCard, ShieldCheck } from 'lucide-react';
+import { X, CheckCircle, Truck, Tag, Check, AlertCircle, Copy, CreditCard, ShieldCheck, MessageCircle, ExternalLink, Send } from 'lucide-react';
 import { CartItem, Coupon, SiteSettings, Order } from '../types';
 
 interface CheckoutModalProps {
@@ -11,6 +11,66 @@ interface CheckoutModalProps {
   settings: SiteSettings;
   onOrderCreated: (order: Order) => void;
 }
+
+// Clean Bangladesh phone number for WhatsApp wa.me link
+export const formatWhatsAppNumber = (phoneStr: string): string => {
+  const clean = phoneStr.replace(/\D/g, '');
+  if (clean.startsWith('880')) return clean;
+  if (clean.startsWith('0')) return '88' + clean;
+  if (clean.length === 10) return '880' + clean;
+  return clean.length ? (clean.startsWith('88') ? clean : '88' + clean) : '8801352113432';
+};
+
+// Build rich Bengali confirmation message with full order breakdown
+export const buildWhatsAppConfirmationMessage = (order: Order, settings: SiteSettings): string => {
+  const itemsText = order.items
+    .map(
+      (item, idx) =>
+        `${idx + 1}. *${item.productName}*${item.selectedSize ? ` [সাইজ: ${item.selectedSize}]` : ''}\n   ↳ পরিমাণ: ${item.quantity}টি | মূল্য: ${settings.currencySymbol}${item.price.toLocaleString()} x ${item.quantity} = *${settings.currencySymbol}${(item.quantity * item.price).toLocaleString()}*`
+    )
+    .join('\n');
+
+  const paymentLabel =
+    order.paymentMethod === 'bkash'
+      ? 'বিকাশ (bKash Send Money)'
+      : order.paymentMethod === 'nagad'
+      ? 'নগদ (Nagad Send Money)'
+      : 'ক্যাশ অন ডেলিভারি (Cash on Delivery)';
+
+  const discountLine =
+    order.discountAmount > 0
+      ? `\n🎁 *ডিসকাউন্ট (কুপন ${order.couponCode || 'প্রযোজ্য'}):* -${settings.currencySymbol}${order.discountAmount.toLocaleString()}`
+      : '';
+
+  const trxLine = order.transactionId
+    ? `\n💳 *TrxID:* ${order.transactionId}\n📱 *পেমেন্ট প্রেরক নম্বর:* ${order.senderPhone || order.phone}`
+    : '';
+
+  return `🛍️ *নতুন অর্ডার কনফার্মেশন - ${settings.storeName} ${settings.logoHighlight}*
+━━━━━━━━━━━━━━━━━━━━━
+📦 *অর্ডার আইডি:* ${order.id}
+🗓️ *তারিখ ও সময়:* ${order.createdAt}
+
+👤 *গ্রাহকের বিবরণ:*
+• নাম: ${order.customerName}
+• মোবাইল নম্বর: ${order.phone}
+• ডেলিভারি ঠিকানা: ${order.address}, ${order.city}
+
+🛒 *অর্ডারকৃত পণ্যসমূহ:*
+${itemsText}
+
+💰 *হিসাব বিবরণী:*
+• সাবটোটাল: ${settings.currencySymbol}${order.subtotal.toLocaleString()}
+• ডেলিভারি চার্জ (${order.city}): ${order.deliveryFee === 0 ? 'ফ্রি (FREE)' : `${settings.currencySymbol}${order.deliveryFee}`}${discountLine}
+━━━━━━━━━━━━━━━━━━━━━
+*সর্বমোট প্রদেয় টাকা:* ${settings.currencySymbol}${order.total.toLocaleString()}
+
+💳 *পেমেন্ট সংক্রান্ত তথ্য:*
+• মাধ্যম: ${paymentLabel}
+• পেমেন্ট স্ট্যাটাস: ${order.paymentStatus || 'Pending'}${trxLine}
+
+✅ দ্রুত অর্ডারটি কনফার্ম করুন ও ডেলিভারির প্রস্তুতি নিন। ধন্যবাদ!`;
+};
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   isOpen,
@@ -33,6 +93,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [orderNumber, setOrderNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
+  const [copiedWaMessage, setCopiedWaMessage] = useState(false);
+
+  // Target WhatsApp number (Default 01352113432 as requested)
+  const targetWhatsApp = settings.whatsappNumber || '01352113432';
 
   // Promo code state
   const [promoCodeInput, setPromoCodeInput] = useState('');
@@ -132,13 +197,24 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     };
 
     // Simulate order placement and store into admin state
+    const waText = buildWhatsAppConfirmationMessage(newOrder, settings);
+    const waUrl = `https://wa.me/${formatWhatsAppNumber(targetWhatsApp)}?text=${encodeURIComponent(waText)}`;
+
+    // Automatically trigger opening WhatsApp in a new tab with order details
+    try {
+      window.open(waUrl, '_blank');
+    } catch (err) {
+      console.warn('Direct window.open prevented by browser popup settings:', err);
+    }
+
     setTimeout(() => {
       onOrderCreated(newOrder);
       setOrderNumber(generatedOrderNum);
+      setCompletedOrder(newOrder);
       setIsSubmitting(false);
       setStep('success');
       onOrderCompleted();
-    }, 800);
+    }, 600);
   };
 
   const handleClose = () => {
@@ -151,6 +227,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setAppliedCoupon(null);
     setPromoCodeInput('');
     setPromoMessage(null);
+    setCompletedOrder(null);
+    setCopiedWaMessage(false);
     onClose();
   };
 
@@ -543,6 +621,59 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <span className="text-sm">{settings.currencySymbol}{grandTotal.toLocaleString()}</span>
               </div>
             </div>
+
+            {/* WHATSAPP CONFIRMATION ACTIONS */}
+            {completedOrder && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 max-w-sm mx-auto mb-6 text-left space-y-3 shadow-xs">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <MessageCircle className="w-4 h-4 fill-white" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-emerald-950">হোয়াটসঅ্যাপে অর্ডার কনফার্মেশন পাঠানো হয়েছে</h4>
+                    <p className="text-[11px] text-emerald-700 leading-snug mt-0.5">
+                      অর্ডারের যাবতীয় তথ্যসহ <span className="font-bold font-mono text-emerald-900">{targetWhatsApp}</span> হোয়াটসঅ্যাপে মেসেজ তৈরি হয়েছে।
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-1">
+                  <a
+                    href={`https://wa.me/${formatWhatsAppNumber(targetWhatsApp)}?text=${encodeURIComponent(buildWhatsAppConfirmationMessage(completedOrder, settings))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2.5 px-4 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-lg font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>হোয়াটসঅ্যাপ মেসেজ দেখুন বা পাঠান ({targetWhatsApp})</span>
+                    <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const text = buildWhatsAppConfirmationMessage(completedOrder, settings);
+                      navigator.clipboard.writeText(text);
+                      setCopiedWaMessage(true);
+                      setTimeout(() => setCopiedWaMessage(false), 2500);
+                    }}
+                    className="w-full py-2 px-3 bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    {copiedWaMessage ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="text-emerald-700 font-bold">অর্ডার মেসেজ কপি হয়েছে!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-neutral-500" />
+                        <span>কনফার্মেশন মেসেজ টেক্সট কপি করুন</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
 
             <button
               onClick={handleClose}

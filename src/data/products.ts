@@ -59,6 +59,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   freeDeliveryThreshold: 2000,
   bkashNumber: '01804459691',
   nagadNumber: '01804459691',
+  whatsappNumber: '01352113432',
 };
 
 export const DEFAULT_COUPONS: Coupon[] = [

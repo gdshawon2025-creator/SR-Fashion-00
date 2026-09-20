@@ -2,5 +2,7 @@
   "name": "SR Fashion",
   "description": "Online Fashion Store featuring modern designs, trending collections, and quality apparel at affordable prices.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

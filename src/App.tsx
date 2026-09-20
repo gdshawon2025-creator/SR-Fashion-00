@@ -76,6 +76,9 @@ export default function App() {
         if (!parsed.nagadNumber || parsed.nagadNumber === '01352113432') {
           parsed.nagadNumber = '01804459691';
         }
+        if (!parsed.whatsappNumber) {
+          parsed.whatsappNumber = '01352113432';
+        }
         return { ...DEFAULT_SETTINGS, ...parsed };
       }
       return DEFAULT_SETTINGS;

@@ -56,6 +56,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     freeDeliveryThreshold: settings.freeDeliveryThreshold,
     bkashNumber: settings.bkashNumber || '01804459691',
     nagadNumber: settings.nagadNumber || '01804459691',
+    whatsappNumber: settings.whatsappNumber || '01352113432',
   });
 
   const [pinInput, setPinInput] = useState(adminPin);
@@ -331,6 +332,30 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 কাস্টমার নগদ বেছে নিলে এই নম্বরে সেন্ড মানি করার নির্দেশনা ও কপি বাটন দেখতে পাবে।
               </p>
             </div>
+          </div>
+
+          {/* WHATSAPP ORDER NOTIFICATION */}
+          <div className="mt-4 p-3.5 bg-emerald-50/50 border border-emerald-200/80 rounded-xl space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-emerald-800 uppercase flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                অর্ডার কনফার্মেশন হোয়াটসঅ্যাপ (WhatsApp) নম্বর
+              </label>
+              <span className="text-[10px] font-semibold text-neutral-500 bg-white px-2 py-0.5 rounded border border-neutral-200">
+                Instant Notification
+              </span>
+            </div>
+            <input
+              type="text"
+              required
+              value={formData.whatsappNumber}
+              onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value })}
+              placeholder="01XXXXXXXXX"
+              className="w-full text-xs px-3 py-2 bg-white border border-neutral-300 rounded-lg focus:border-emerald-600 outline-none font-mono font-bold text-neutral-900"
+            />
+            <p className="text-[11px] text-neutral-500">
+              কাস্টমার কোনো অর্ডার কনফার্ম করলে তাৎক্ষণিকভাবে এই হোয়াটসঅ্যাপ নম্বরে সকল তথ্যসহ অর্ডার কনফার্মেশন পাঠানো হবে।
+            </p>
           </div>
         </div>
 

@@ -15,7 +15,8 @@ import {
   FileText,
   Copy,
   Check,
-  CheckCheck
+  CheckCheck,
+  MessageCircle
 } from 'lucide-react';
 import { Order, OrderStatus, PaymentStatus, SiteSettings } from '../../types';
 
@@ -450,6 +451,25 @@ export const OrdersTab: React.FC<OrdersTabProps> = ({
                       </div>
 
                       <div className="flex items-center gap-1.5 ml-auto">
+                        <a
+                          href={`https://wa.me/${
+                            order.phone.replace(/\D/g, '').startsWith('880')
+                              ? order.phone.replace(/\D/g, '')
+                              : order.phone.replace(/\D/g, '').startsWith('0')
+                              ? '88' + order.phone.replace(/\D/g, '')
+                              : '8801352113432'
+                          }?text=${encodeURIComponent(
+                            `আসসালামু আলাইকুম ${order.customerName},\n${settings.storeName} ${settings.logoHighlight} থেকে আপনার অর্ডার #${order.id} সংক্রান্ত তথ্য:\nমোট টাকা: ${settings.currencySymbol}${order.total.toLocaleString()}\nস্ট্যাটাস: ${order.status}`
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-medium rounded-md inline-flex items-center gap-1 transition-colors cursor-pointer border border-emerald-200"
+                          title="কাস্টমারকে হোয়াটসঅ্যাপে মেসেজ দিন"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>WhatsApp</span>
+                        </a>
+
                         <button
                           onClick={() => setSelectedOrderForInvoice(order)}
                           className="px-2.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-medium rounded-md inline-flex items-center gap-1 transition-colors cursor-pointer"
