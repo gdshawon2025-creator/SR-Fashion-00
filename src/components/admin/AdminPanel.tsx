@@ -362,6 +362,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               onAddProduct={onAddProduct}
               onUpdateProduct={onUpdateProduct}
               onDeleteProduct={onDeleteProduct}
+              onAddCategory={onAddCategory}
               isAddModalOpenInitially={openAddProductModal}
               onCloseInitialAddModal={() => setOpenAddProductModal(false)}
             />

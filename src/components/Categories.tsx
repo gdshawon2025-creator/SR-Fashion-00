@@ -13,7 +13,7 @@ export const Categories: React.FC<CategoriesProps> = ({
   selectedCategory,
 }) => {
   const handleCategoryClick = (category: CategoryItem) => {
-    onSelectCategory(category.categoryKey);
+    onSelectCategory(category.title || category.categoryKey);
     const shopSection = document.getElementById('shop');
     if (shopSection) {
       shopSection.scrollIntoView({ behavior: 'smooth' });
@@ -31,7 +31,9 @@ export const Categories: React.FC<CategoriesProps> = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {categories.map((cat) => {
-          const isCurrentActive = selectedCategory === cat.categoryKey;
+          const isCurrentActive =
+            selectedCategory?.toLowerCase() === cat.categoryKey?.toLowerCase() ||
+            selectedCategory?.toLowerCase() === cat.title?.toLowerCase();
           return (
             <div
               key={cat.id}

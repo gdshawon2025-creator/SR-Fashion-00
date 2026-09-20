@@ -33,14 +33,21 @@ export const ProductsSection: React.FC<ProductsSectionProps> = ({
     const list = ['All'];
     if (categories && categories.length > 0) {
       categories.forEach((c) => {
-        if (!list.includes(c.title)) list.push(c.title);
+        if (c.title && !list.includes(c.title)) list.push(c.title);
       });
-    } else {
+    }
+    // Also include categories from products if any exist
+    products.forEach((p) => {
+      if (p.category && !list.some((item) => item.toLowerCase() === p.category.toLowerCase())) {
+        list.push(p.category);
+      }
+    });
+    if (list.length === 1) {
       list.push("Men's Fashion", "Women's Fashion", 'T-Shirts', 'Pants');
     }
     if (!list.includes('Sale Deals')) list.push('Sale Deals');
     return list;
-  }, [categories]);
+  }, [categories, products]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((item) => {
@@ -49,7 +56,8 @@ export const ProductsSection: React.FC<ProductsSectionProps> = ({
       if (activeCategory === 'Sale Deals') {
         matchesCategory = Boolean(item.isSale);
       } else if (activeCategory !== 'All') {
-        matchesCategory = item.category === activeCategory;
+        matchesCategory =
+          item.category.trim().toLowerCase() === activeCategory.trim().toLowerCase();
       }
 
       // Search match

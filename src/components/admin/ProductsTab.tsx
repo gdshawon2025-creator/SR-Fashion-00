@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { 
   Plus, 
   Search, 
@@ -25,6 +25,7 @@ interface ProductsTabProps {
   onAddProduct: (product: Product) => void;
   onUpdateProduct: (product: Product) => void;
   onDeleteProduct: (productId: string) => void;
+  onAddCategory?: (category: CategoryItem) => void;
   isAddModalOpenInitially?: boolean;
   onCloseInitialAddModal?: () => void;
 }
@@ -46,6 +47,18 @@ const PRESET_IMAGES = [
 
 const STANDARD_SIZES = ['S', 'M', 'L', 'XL', 'XXL', '28', '30', '32', '34', '36'];
 
+const DEFAULT_FALLBACK_CATEGORIES = [
+  "Men's Fashion",
+  "Women's Fashion",
+  'T-Shirts',
+  'Pants',
+  'Panjabi',
+  'Polo Shirt',
+  'Winter Collection',
+  'Shoes & Footwear',
+  'Accessories',
+];
+
 export const ProductsTab: React.FC<ProductsTabProps> = ({
   products,
   categories,
@@ -53,6 +66,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   onAddProduct,
   onUpdateProduct,
   onDeleteProduct,
+  onAddCategory,
   isAddModalOpenInitially = false,
   onCloseInitialAddModal,
 }) => {
@@ -72,6 +86,29 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   // Success toast
   const [toastMessage, setToastMessage] = useState('');
 
+  // Available categories combined from props, products, and fallbacks
+  const availableCategories = useMemo(() => {
+    const list: string[] = [];
+    const addUnique = (title: string) => {
+      const clean = title?.trim();
+      if (clean && !list.some((existing) => existing.toLowerCase() === clean.toLowerCase())) {
+        list.push(clean);
+      }
+    };
+
+    categories.forEach((c) => addUnique(c.title));
+    products.forEach((p) => addUnique(p.category));
+
+    if (list.length === 0) {
+      DEFAULT_FALLBACK_CATEGORIES.forEach((c) => addUnique(c));
+    }
+    return list;
+  }, [categories, products]);
+
+  // Custom Category Input Toggle
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategoryInput, setCustomCategoryInput] = useState('');
+
   // Form State
   const [formData, setFormData] = useState<{
     name: string;
@@ -87,7 +124,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
     reviewCount: number;
   }>({
     name: '',
-    category: categories[0]?.title || "Men's Fashion",
+    category: categories[0]?.title || availableCategories[0] || "Men's Fashion",
     price: 950,
     oldPrice: '',
     image: PRESET_IMAGES[0].url,
@@ -154,9 +191,12 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   // Handle open add modal
   const handleOpenAddModal = () => {
     setEditingProduct(null);
+    setIsCustomCategory(false);
+    setCustomCategoryInput('');
+    const defaultCat = categories[0]?.title || availableCategories[0] || "Men's Fashion";
     setFormData({
       name: '',
-      category: categories[0]?.title || "Men's Fashion",
+      category: defaultCat,
       price: 950,
       oldPrice: '',
       image: PRESET_IMAGES[Math.floor(Math.random() * PRESET_IMAGES.length)].url,
@@ -174,6 +214,8 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   // Handle open edit modal
   const handleOpenEditModal = (product: Product) => {
     setEditingProduct(product);
+    setIsCustomCategory(false);
+    setCustomCategoryInput('');
     setFormData({
       name: product.name,
       category: product.category,
@@ -209,6 +251,13 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
       setFormError('পণ্যের নাম প্রদান করুন');
       return;
     }
+
+    const finalCategory = (isCustomCategory ? customCategoryInput.trim() : formData.category.trim());
+    if (!finalCategory) {
+      setFormError('অনুগ্রহ করে পণ্যের একটি ক্যাটাগরি নির্ধারণ করুন অথবা নতুন ক্যাটাগরির নাম লিখুন');
+      return;
+    }
+
     if (formData.price <= 0) {
       setFormError('সঠিক মূল্য প্রদান করুন');
       return;
@@ -216,6 +265,21 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
     if (!formData.image.trim()) {
       setFormError('পণ্যের ছবির লিঙ্ক দিন অথবা ছবি আপলোড করুন');
       return;
+    }
+
+    // Auto-register newly created category in the store's categories
+    if (onAddCategory) {
+      const alreadyExists = categories.some(
+        (c) => c.title.trim().toLowerCase() === finalCategory.toLowerCase()
+      );
+      if (!alreadyExists) {
+        onAddCategory({
+          id: `cat-${Date.now()}`,
+          title: finalCategory,
+          categoryKey: finalCategory,
+          image: formData.image.trim() || 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80',
+        });
+      }
     }
 
     const sizesArr = formData.sizes
@@ -230,7 +294,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
       const updated: Product = {
         ...editingProduct,
         name: formData.name.trim(),
-        category: formData.category,
+        category: finalCategory,
         price: Number(formData.price),
         oldPrice: oldPriceNum,
         image: formData.image.trim(),
@@ -246,7 +310,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
       const newProduct: Product = {
         id: `prod-${Date.now()}`,
         name: formData.name.trim(),
-        category: formData.category,
+        category: finalCategory,
         price: Number(formData.price),
         oldPrice: oldPriceNum,
         image: formData.image.trim(),
@@ -310,7 +374,9 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.category.toLowerCase().includes(search.toLowerCase());
     
-    const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+    const matchesCategory =
+      selectedCategory === 'All' ||
+      p.category.trim().toLowerCase() === selectedCategory.trim().toLowerCase();
 
     let matchesStock = true;
     if (stockFilter === 'inStock') matchesStock = p.inStock !== false;
@@ -355,9 +421,9 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
             className="text-xs px-3 py-2 border border-neutral-300 rounded-lg focus:border-[#111] outline-none bg-white text-neutral-700"
           >
             <option value="All">সকল ক্যাটাগরি ({products.length})</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.title}>
-                {c.title}
+            {availableCategories.map((catTitle) => (
+              <option key={catTitle} value={catTitle}>
+                {catTitle}
               </option>
             ))}
           </select>
@@ -751,20 +817,99 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
               {/* CATEGORY & PRICE */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">
-                    ক্যাটাগরি <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full text-xs px-3 py-2.5 border border-neutral-300 rounded-lg focus:border-[#111] outline-none bg-white font-medium"
-                  >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.title}>
-                        {c.title}
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-neutral-700 uppercase">
+                      ক্যাটাগরি <span className="text-red-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomCategory(!isCustomCategory);
+                        if (!isCustomCategory) {
+                          setCustomCategoryInput('');
+                        }
+                      }}
+                      className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold cursor-pointer underline"
+                    >
+                      {isCustomCategory ? 'তালিকা থেকে বেছে নিন' : '+ নতুন লিখুন'}
+                    </button>
+                  </div>
+
+                  {isCustomCategory ? (
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        value={customCategoryInput}
+                        onChange={(e) => {
+                          setCustomCategoryInput(e.target.value);
+                          setFormData({ ...formData, category: e.target.value });
+                        }}
+                        placeholder="যেমন: পাঞ্জাবি / টি-শার্ট"
+                        className="w-full text-xs px-3 py-2.5 border-2 border-blue-500 rounded-lg focus:outline-none bg-blue-50/20 font-medium text-neutral-900"
+                        autoFocus
+                      />
+                      {customCategoryInput && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomCategoryInput('');
+                            setFormData({ ...formData, category: '' });
+                          }}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <select
+                      value={formData.category}
+                      onChange={(e) => {
+                        if (e.target.value === '__add_new__') {
+                          setIsCustomCategory(true);
+                          setCustomCategoryInput('');
+                        } else {
+                          setFormData({ ...formData, category: e.target.value });
+                        }
+                      }}
+                      className="w-full text-xs px-3 py-2.5 border border-neutral-300 rounded-lg focus:border-[#111] outline-none bg-white font-medium text-neutral-900 cursor-pointer"
+                    >
+                      {formData.category && !availableCategories.includes(formData.category) && (
+                        <option value={formData.category}>{formData.category}</option>
+                      )}
+                      {availableCategories.map((catName) => (
+                        <option key={catName} value={catName}>
+                          {catName}
+                        </option>
+                      ))}
+                      <option value="__add_new__" className="font-bold text-blue-600">
+                        ➕ নতুন ক্যাটাগরি তৈরি করুন...
                       </option>
+                    </select>
+                  )}
+
+                  {/* QUICK SUGGESTIONS CHIPS */}
+                  <div className="mt-1.5 flex flex-wrap gap-1 items-center">
+                    <span className="text-[10px] text-neutral-400">সাজেশন:</span>
+                    {['Men\'s Fashion', 'Women\'s Fashion', 'T-Shirts', 'Pants', 'Panjabi'].map((quickCat) => (
+                      <button
+                        key={quickCat}
+                        type="button"
+                        onClick={() => {
+                          setIsCustomCategory(false);
+                          setFormData({ ...formData, category: quickCat });
+                        }}
+                        className={`px-1.5 py-0.5 rounded text-[10px] transition-colors cursor-pointer ${
+                          formData.category === quickCat && !isCustomCategory
+                            ? 'bg-[#111] text-white font-bold'
+                            : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                        }`}
+                      >
+                        {quickCat}
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
 
                 <div>
