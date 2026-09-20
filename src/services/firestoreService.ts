@@ -9,6 +9,29 @@ import {
 import { db } from '../firebase';
 import { Product, Order, CategoryItem, SiteSettings, Coupon, HeroBanner, OrderStatus, PaymentStatus } from '../types';
 
+/**
+ * Sanitizes an object before writing to Firestore.
+ * Firestore strictly forbids `undefined` field values and will throw an unhandled exception.
+ * This recursively strips out any `undefined` keys or converts them safely.
+ */
+export const sanitizeForFirestore = (obj: any): any => {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeForFirestore);
+  }
+  if (typeof obj === 'object') {
+    const clean: Record<string, any> = {};
+    for (const key of Object.keys(obj)) {
+      const val = obj[key];
+      if (val !== undefined) {
+        clean[key] = sanitizeForFirestore(val);
+      }
+    }
+    return clean;
+  }
+  return obj;
+};
+
 // ================= PRODUCTS =================
 export const subscribeProducts = (onUpdate: (products: Product[]) => void) => {
   const colRef = collection(db, 'products');
@@ -30,7 +53,7 @@ export const subscribeProducts = (onUpdate: (products: Product[]) => void) => {
 export const syncSaveProduct = async (product: Product): Promise<void> => {
   try {
     const docRef = doc(db, 'products', product.id);
-    await setDoc(docRef, product, { merge: true });
+    await setDoc(docRef, sanitizeForFirestore(product), { merge: true });
   } catch (err) {
     console.error('Error saving product to Firestore:', err);
   }
@@ -66,7 +89,7 @@ export const subscribeCategories = (onUpdate: (categories: CategoryItem[]) => vo
 export const syncSaveCategory = async (category: CategoryItem): Promise<void> => {
   try {
     const docRef = doc(db, 'categories', category.id);
-    await setDoc(docRef, category, { merge: true });
+    await setDoc(docRef, sanitizeForFirestore(category), { merge: true });
   } catch (err) {
     console.error('Error saving category to Firestore:', err);
   }
@@ -104,7 +127,8 @@ export const subscribeOrders = (onUpdate: (orders: Order[]) => void) => {
 export const syncSaveOrder = async (order: Order): Promise<void> => {
   try {
     const docRef = doc(db, 'orders', order.id);
-    await setDoc(docRef, order, { merge: true });
+    const cleanOrder = sanitizeForFirestore(order);
+    await setDoc(docRef, cleanOrder, { merge: true });
   } catch (err) {
     console.error('Error saving order to Firestore:', err);
   }
@@ -156,7 +180,7 @@ export const subscribeSettings = (onUpdate: (settings: SiteSettings) => void) =>
 export const syncSaveSettings = async (settings: SiteSettings): Promise<void> => {
   try {
     const docRef = doc(db, 'settings', 'store_config');
-    await setDoc(docRef, settings, { merge: true });
+    await setDoc(docRef, sanitizeForFirestore(settings), { merge: true });
   } catch (err) {
     console.error('Error saving settings to Firestore:', err);
   }
@@ -211,7 +235,7 @@ export const subscribeCoupons = (onUpdate: (coupons: Coupon[]) => void) => {
 export const syncSaveCoupon = async (coupon: Coupon): Promise<void> => {
   try {
     const docRef = doc(db, 'coupons', coupon.id);
-    await setDoc(docRef, coupon, { merge: true });
+    await setDoc(docRef, sanitizeForFirestore(coupon), { merge: true });
   } catch (err) {
     console.error('Error saving coupon to Firestore:', err);
   }
@@ -247,7 +271,7 @@ export const subscribeBanners = (onUpdate: (banners: HeroBanner[]) => void) => {
 export const syncSaveBanner = async (banner: HeroBanner): Promise<void> => {
   try {
     const docRef = doc(db, 'banners', banner.id);
-    await setDoc(docRef, banner, { merge: true });
+    await setDoc(docRef, sanitizeForFirestore(banner), { merge: true });
   } catch (err) {
     console.error('Error saving banner to Firestore:', err);
   }
@@ -271,13 +295,14 @@ export const seedFirestoreIfEmpty = async (initial: {
   coupons: Coupon[];
   banners: HeroBanner[];
   adminPin: string;
+  orders?: Order[];
 }): Promise<void> => {
   try {
     // 1. Check categories
     const catSnap = await getDocs(collection(db, 'categories'));
     if (catSnap.empty && initial.categories.length > 0) {
       for (const cat of initial.categories) {
-        await setDoc(doc(db, 'categories', cat.id), cat);
+        await setDoc(doc(db, 'categories', cat.id), sanitizeForFirestore(cat));
       }
     }
 
@@ -285,7 +310,7 @@ export const seedFirestoreIfEmpty = async (initial: {
     const prodSnap = await getDocs(collection(db, 'products'));
     if (prodSnap.empty && initial.products.length > 0) {
       for (const prod of initial.products) {
-        await setDoc(doc(db, 'products', prod.id), prod);
+        await setDoc(doc(db, 'products', prod.id), sanitizeForFirestore(prod));
       }
     }
 
@@ -293,7 +318,7 @@ export const seedFirestoreIfEmpty = async (initial: {
     const settingsCol = collection(db, 'settings');
     const settingsSnap = await getDocs(settingsCol);
     if (settingsSnap.empty) {
-      await setDoc(doc(db, 'settings', 'store_config'), initial.settings);
+      await setDoc(doc(db, 'settings', 'store_config'), sanitizeForFirestore(initial.settings));
       await setDoc(doc(db, 'settings', 'admin_pin'), { pin: initial.adminPin || 'admin123' });
     }
 
@@ -301,7 +326,7 @@ export const seedFirestoreIfEmpty = async (initial: {
     const bannerSnap = await getDocs(collection(db, 'banners'));
     if (bannerSnap.empty && initial.banners.length > 0) {
       for (const b of initial.banners) {
-        await setDoc(doc(db, 'banners', b.id), b);
+        await setDoc(doc(db, 'banners', b.id), sanitizeForFirestore(b));
       }
     }
 
@@ -309,7 +334,17 @@ export const seedFirestoreIfEmpty = async (initial: {
     const couponSnap = await getDocs(collection(db, 'coupons'));
     if (couponSnap.empty && initial.coupons.length > 0) {
       for (const c of initial.coupons) {
-        await setDoc(doc(db, 'coupons', c.id), c);
+        await setDoc(doc(db, 'coupons', c.id), sanitizeForFirestore(c));
+      }
+    }
+
+    // 6. Check orders
+    if (initial.orders && initial.orders.length > 0) {
+      const orderSnap = await getDocs(collection(db, 'orders'));
+      if (orderSnap.empty) {
+        for (const o of initial.orders) {
+          await setDoc(doc(db, 'orders', o.id), sanitizeForFirestore(o));
+        }
       }
     }
   } catch (err) {

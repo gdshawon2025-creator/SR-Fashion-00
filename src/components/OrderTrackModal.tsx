@@ -41,10 +41,46 @@ export const OrderTrackModal: React.FC<OrderTrackModalProps> = ({
   settings,
   initialPhone = '',
 }) => {
-  const [phoneNumber, setPhoneNumber] = useState(initialPhone);
-  const [searchedNumber, setSearchedNumber] = useState(initialPhone);
-  const [hasSearched, setHasSearched] = useState(false);
+  const getSavedPhone = () => {
+    try {
+      return initialPhone || localStorage.getItem('srfashion_last_customer_phone') || '';
+    } catch {
+      return initialPhone;
+    }
+  };
+
+  const [phoneNumber, setPhoneNumber] = useState(getSavedPhone);
+  const [searchedNumber, setSearchedNumber] = useState(getSavedPhone);
+  const [hasSearched, setHasSearched] = useState(() => Boolean(getSavedPhone()));
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<Order | null>(null);
+
+  // Sync state if initialPhone or modal open changes
+  React.useEffect(() => {
+    if (isOpen) {
+      const activePhone = getSavedPhone();
+      if (activePhone) {
+        setPhoneNumber(activePhone);
+        setSearchedNumber(activePhone);
+        setHasSearched(true);
+      }
+    }
+  }, [isOpen, initialPhone]);
+
+  // Read orders placed on this device
+  const myDeviceOrders: Order[] = React.useMemo(() => {
+    try {
+      const saved = localStorage.getItem('srfashion_my_orders');
+      if (!saved) return [];
+      const parsed: Order[] = JSON.parse(saved);
+      // Synchronize with latest status from orders prop if available
+      return parsed.map((po) => {
+        const liveMatch = orders.find((o) => o.id === po.id);
+        return liveMatch || po;
+      });
+    } catch {
+      return [];
+    }
+  }, [orders, isOpen]);
 
   if (!isOpen) return null;
 
@@ -53,25 +89,46 @@ export const OrderTrackModal: React.FC<OrderTrackModalProps> = ({
     if (!phoneNumber.trim()) return;
     setSearchedNumber(phoneNumber.trim());
     setHasSearched(true);
+    try {
+      localStorage.setItem('srfashion_last_customer_phone', phoneNumber.trim());
+    } catch (err) {
+      console.warn(err);
+    }
   };
 
   // Find matching orders by phone, sender phone or Order ID
   const cleanSearch = normalizePhoneNumber(searchedNumber);
   const rawSearchLower = searchedNumber.toLowerCase().trim();
 
-  const matchingOrders = hasSearched
-    ? orders.filter((order) => {
-        const orderPhoneClean = normalizePhoneNumber(order.phone);
-        const senderPhoneClean = order.senderPhone ? normalizePhoneNumber(order.senderPhone) : '';
-        const orderIdLower = order.id.toLowerCase();
+  // Combine live orders and local device orders so nothing is ever missed
+  const allKnownOrders = React.useMemo(() => {
+    const map = new Map<string, Order>();
+    // First add device orders
+    myDeviceOrders.forEach((o) => map.set(o.id, o));
+    // Live orders override with real-time status from Firestore
+    orders.forEach((o) => map.set(o.id, o));
+    const combined = Array.from(map.values());
+    combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return combined;
+  }, [orders, myDeviceOrders]);
 
-        return (
-          (cleanSearch.length >= 4 && (orderPhoneClean.includes(cleanSearch) || senderPhoneClean.includes(cleanSearch))) ||
-          orderIdLower.includes(rawSearchLower) ||
-          order.phone.includes(searchedNumber.trim())
-        );
-      })
-    : [];
+  const matchingOrders = React.useMemo(() => {
+    if (!hasSearched) {
+      // If user hasn't typed a query yet, but has device orders, show them automatically!
+      return myDeviceOrders;
+    }
+    return allKnownOrders.filter((order) => {
+      const orderPhoneClean = normalizePhoneNumber(order.phone);
+      const senderPhoneClean = order.senderPhone ? normalizePhoneNumber(order.senderPhone) : '';
+      const orderIdLower = order.id.toLowerCase();
+
+      return (
+        (cleanSearch.length >= 4 && (orderPhoneClean.includes(cleanSearch) || senderPhoneClean.includes(cleanSearch))) ||
+        orderIdLower.includes(rawSearchLower) ||
+        order.phone.includes(searchedNumber.trim())
+      );
+    });
+  }, [hasSearched, cleanSearch, rawSearchLower, searchedNumber, allKnownOrders, myDeviceOrders]);
 
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
@@ -211,26 +268,18 @@ export const OrderTrackModal: React.FC<OrderTrackModalProps> = ({
 
         {/* RESULTS SCROLLABLE AREA */}
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
-          {!hasSearched ? (
-            <div className="py-12 text-center text-neutral-500 space-y-3">
-              <div className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center mx-auto text-neutral-400">
-                <Search className="w-7 h-7" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-neutral-700">ফোন নম্বর লিখে "খুঁজুন" বাটনে চাপ দিন</p>
-                <p className="text-xs text-neutral-400 mt-1">
-                  অর্ডার করার সময় যে মোবাইল নম্বরটি ব্যবহার করেছিলেন তা প্রবেশ করান।
-                </p>
-              </div>
-            </div>
-          ) : matchingOrders.length > 0 ? (
+          {matchingOrders.length > 0 ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-neutral-100 text-xs">
-                <span className="text-neutral-600">
-                  নম্বর <strong>{searchedNumber}</strong> এর অধীনে <strong>{matchingOrders.length}</strong> টি অর্ডার পাওয়া গেছে:
+                <span className="text-neutral-700 font-medium">
+                  {hasSearched ? (
+                    <>নম্বর <strong>{searchedNumber}</strong> এর অধীনে <strong>{matchingOrders.length}</strong> টি অর্ডার পাওয়া গেছে:</>
+                  ) : (
+                    <>🛍️ আপনার এই ডিভাইসের সাম্প্রতিক অর্ডার (<strong>{matchingOrders.length}</strong> টি):</>
+                  )}
                 </span>
-                <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  ✓ অর্ডার ভেরিফাইড
+                <span className="font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  ✓ লাইভ অর্ডার ভেরিফাইড
                 </span>
               </div>
 
@@ -415,6 +464,19 @@ export const OrderTrackModal: React.FC<OrderTrackModalProps> = ({
                   </div>
                 );
               })}
+            </div>
+          ) : !hasSearched ? (
+            /* EMPTY SEARCH PROMPT */
+            <div className="py-12 text-center text-neutral-500 space-y-3">
+              <div className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center mx-auto text-neutral-400">
+                <Search className="w-7 h-7" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-neutral-700">ফোন নম্বর লিখে "খুঁজুন" বাটনে চাপ দিন</p>
+                <p className="text-xs text-neutral-400 mt-1">
+                  অর্ডার করার সময় যে মোবাইল নম্বরটি ব্যবহার করেছিলেন তা প্রবেশ করান।
+                </p>
+              </div>
             </div>
           ) : (
             /* NO ORDER FOUND STATE */

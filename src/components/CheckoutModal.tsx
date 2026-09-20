@@ -10,6 +10,7 @@ interface CheckoutModalProps {
   coupons: Coupon[];
   settings: SiteSettings;
   onOrderCreated: (order: Order) => void;
+  onOpenOrderTrack?: (phone?: string) => void;
 }
 
 // Clean Bangladesh phone number for WhatsApp wa.me link
@@ -80,6 +81,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   coupons,
   settings,
   onOrderCreated,
+  onOpenOrderTrack,
 }) => {
   const [step, setStep] = useState<'form' | 'success'>('form');
   const [name, setName] = useState('');
@@ -177,24 +179,35 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       address: address.trim(),
       paymentMethod: paymentMethod,
       paymentStatus: paymentMethod === 'cod' ? 'Unpaid' : transactionId.trim() ? 'Pending Verification' : 'Unpaid',
-      transactionId: transactionId.trim() ? transactionId.trim().toUpperCase() : undefined,
-      senderPhone: senderPhone.trim() || phone.trim(),
+      transactionId: transactionId.trim() ? transactionId.trim().toUpperCase() : '',
+      senderPhone: senderPhone.trim() || phone.trim() || '',
       status: 'Pending',
       items: cartItems.map((ci) => ({
         productId: ci.product.id,
         productName: ci.product.name,
         price: ci.product.price,
         quantity: ci.quantity,
-        selectedSize: ci.selectedSize,
-        image: ci.product.image,
+        selectedSize: ci.selectedSize || '',
+        image: ci.product.image || '',
       })),
       subtotal,
       deliveryFee,
       discountAmount,
-      couponCode: appliedCoupon?.code,
+      couponCode: appliedCoupon?.code || '',
       total: grandTotal,
       createdAt: new Date().toISOString().replace('T', ' ').slice(0, 16),
     };
+
+    // Save this customer's order and phone to device localStorage for persistent tracking
+    try {
+      localStorage.setItem('srfashion_last_customer_phone', phone.trim());
+      const savedOrdersStr = localStorage.getItem('srfashion_my_orders');
+      const existingMyOrders: Order[] = savedOrdersStr ? JSON.parse(savedOrdersStr) : [];
+      const updatedMyOrders = [newOrder, ...existingMyOrders.filter((o) => o.id !== newOrder.id)];
+      localStorage.setItem('srfashion_my_orders', JSON.stringify(updatedMyOrders));
+    } catch (err) {
+      console.warn('Could not cache placed order locally:', err);
+    }
 
     // Simulate order placement and store into admin state
     const waText = buildWhatsAppConfirmationMessage(newOrder, settings);
@@ -675,12 +688,39 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
             )}
 
-            <button
-              onClick={handleClose}
-              className="px-8 py-3 bg-[#111111] hover:bg-[#e8b04b] hover:text-[#111111] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors cursor-pointer"
-            >
-              আরও কেনাকাটা করুন
-            </button>
+            <div className="text-[11px] text-neutral-600 bg-amber-50 border border-amber-200 p-3 rounded-xl max-w-sm mx-auto mb-4 text-left space-y-1">
+              <div className="font-bold text-amber-950 flex items-center gap-1.5">
+                <Truck className="w-3.5 h-3.5 text-[#e8b04b]" />
+                <span>অর্ডারটি নিরাপদে সংরক্ষিত হয়েছে</span>
+              </div>
+              <p className="text-[11px] text-amber-800 leading-relaxed">
+                পরবর্তীতে যেকোনো সময় ওয়েবসাইটের শীর্ষে থাকা <strong>"অর্ডার ট্র্যাক"</strong> মেনু থেকে আপনার মোবাইল নম্বর (<span className="font-mono font-bold">{phone}</span>) দিয়ে অর্ডারের সর্বশেষ অবস্থা দেখতে পারবেন।
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 max-w-sm mx-auto">
+              {onOpenOrderTrack && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleClose();
+                    onOpenOrderTrack(phone.trim());
+                  }}
+                  className="w-full sm:flex-1 py-3 px-4 bg-[#e8b04b] text-[#111111] hover:bg-[#d69f3a] text-xs font-bold uppercase tracking-wider rounded-xl transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-2"
+                >
+                  <Truck className="w-4 h-4" />
+                  <span>অর্ডার ট্র্যাক ও চালান দেখুন</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleClose}
+                className="w-full sm:flex-1 py-3 px-4 bg-[#111111] hover:bg-neutral-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors cursor-pointer"
+              >
+                আরও কেনাকাটা করুন
+              </button>
+            </div>
           </div>
         )}
       </div>

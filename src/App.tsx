@@ -214,6 +214,7 @@ export default function App() {
       coupons,
       banners: heroBanners,
       adminPin,
+      orders,
     });
 
     // 2. Real-time listeners across all devices
@@ -228,7 +229,23 @@ export default function App() {
     });
 
     const unsubOrders = subscribeOrders((cloudOrders) => {
-      setOrders(cloudOrders);
+      setOrders((prevOrders) => {
+        if (cloudOrders.length > 0) {
+          const cloudIds = new Set(cloudOrders.map((o) => o.id));
+          const unsynced = prevOrders.filter((o) => !cloudIds.has(o.id));
+          if (unsynced.length > 0) {
+            unsynced.forEach((uo) => syncSaveOrder(uo));
+            const merged = [...unsynced, ...cloudOrders];
+            merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            return merged;
+          }
+          return cloudOrders;
+        } else if (prevOrders.length > 0) {
+          prevOrders.forEach((po) => syncSaveOrder(po));
+          return prevOrders;
+        }
+        return cloudOrders;
+      });
     });
 
     const unsubSettings = subscribeSettings((cloudSettings) => {
@@ -743,6 +760,10 @@ export default function App() {
         coupons={coupons}
         settings={settings}
         onOrderCreated={handleOrderCreated}
+        onOpenOrderTrack={(phone) => {
+          setCheckoutModalOpen(false);
+          handleOpenOrderTrack(phone);
+        }}
         onOrderCompleted={() => {
           setCart([]);
           localStorage.removeItem('srfashion_cart');
