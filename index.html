@@ -9,9 +9,25 @@
     <meta property="og:description" content="Discover the latest fashion trends with SR Fashion. Quality products, modern designs, and affordable prices." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      // Fix for GitHub Pages when opened without trailing slash (e.g. /SR-Fashion -> /SR-Fashion/)
+      if (
+        window.location.hostname.endsWith('github.io') &&
+        !window.location.pathname.endsWith('/') &&
+        !window.location.pathname.split('/').pop().includes('.')
+      ) {
+        window.location.replace(window.location.pathname + '/' + window.location.search + window.location.hash);
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: system-ui, -apple-system, sans-serif; background-color: #f8f8f8; color: #222;">
+        <div style="width: 36px; height: 36px; border: 3px solid #e5e5e5; border-top-color: #111111; border-radius: 50%; animation: srfspin 0.8s linear infinite;"></div>
+        <p style="margin-top: 14px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;">SR FASHION লোড হচ্ছে...</p>
+        <style>@keyframes srfspin { to { transform: rotate(360deg); } }</style>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
