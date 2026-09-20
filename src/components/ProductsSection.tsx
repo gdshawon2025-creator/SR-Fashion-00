@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { ProductCard } from './ProductCard';
 import { Product, CategoryItem } from '../types';
-import { Filter, Sparkles } from 'lucide-react';
+import { Filter, Sparkles, PackagePlus } from 'lucide-react';
 
 interface ProductsSectionProps {
   products: Product[];
@@ -127,6 +127,22 @@ export const ProductsSection: React.FC<ProductsSectionProps> = ({
               onToggleWishlist={onToggleWishlist}
             />
           ))}
+        </div>
+      ) : products.length === 0 ? (
+        <div className="bg-white rounded-2xl p-10 md:p-14 text-center max-w-lg mx-auto shadow-xs border border-neutral-200">
+          <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4 text-neutral-400">
+            <PackagePlus className="w-8 h-8" />
+          </div>
+          <h3 className="text-xl font-bold text-neutral-900 mb-2">কোনো প্রোডাক্ট পাওয়া যায়নি</h3>
+          <p className="text-neutral-500 text-sm mb-6 leading-relaxed">
+            স্টোরে বর্তমানে কোনো প্রোডাক্ট যুক্ত নেই। আপনি অ্যাডমিন প্যানেল থেকে আপনার নিজস্ব পণ্য, দাম ও ছবি সহ নতুন প্রোডাক্ট যোগ করতে পারেন।
+          </p>
+          <a
+            href="#admin"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#111111] hover:bg-[#e8b04b] hover:text-[#111111] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors shadow-sm"
+          >
+            অ্যাডমিন প্যানেল থেকে প্রোডাক্ট যোগ করুন
+          </a>
         </div>
       ) : (
         <div className="bg-white rounded-lg p-12 text-center max-w-md mx-auto shadow-xs">

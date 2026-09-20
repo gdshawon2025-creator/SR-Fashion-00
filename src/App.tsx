@@ -28,6 +28,13 @@ export default function App() {
   // 1. PRODUCTS STATE (with persistence)
   const [products, setProducts] = useState<Product[]>(() => {
     try {
+      const cleared = localStorage.getItem('srfashion_default_products_cleared_v2');
+      if (!cleared) {
+        localStorage.setItem('srfashion_default_products_cleared_v2', 'true');
+        localStorage.setItem('srfashion_products', JSON.stringify([]));
+        localStorage.setItem('srfashion_orders', JSON.stringify([]));
+        return [];
+      }
       const saved = localStorage.getItem('srfashion_products');
       return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
     } catch {
