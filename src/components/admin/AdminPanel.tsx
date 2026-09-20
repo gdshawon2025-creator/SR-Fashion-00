@@ -13,7 +13,10 @@ import {
   X,
   Store,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Lock
 } from 'lucide-react';
 import { Product, Order, CategoryItem, SiteSettings, Coupon, OrderStatus, HeroBanner, PaymentStatus } from '../../types';
 import { DashboardTab } from './DashboardTab';
@@ -99,6 +102,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Login form state
   const [inputPin, setInputPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
   const [loginError, setLoginError] = useState('');
 
   // Handle Login
@@ -148,16 +152,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">
                 অ্যাডমিন সিকিউরিটি পিন (Security PIN)
               </label>
-              <input
-                type="password"
-                required
-                value={inputPin}
-                onChange={(e) => setInputPin(e.target.value)}
-                placeholder="পিন লিখুন..."
-                className="w-full text-center tracking-widest text-lg px-4 py-2.5 border border-neutral-300 rounded-lg focus:border-[#111] outline-none font-mono"
-              />
-              <div className="mt-1.5 text-[11px] text-neutral-400">
-                <span>ডিফল্ট পিন: <strong>admin123</strong> (প্রয়োজনে অ্যাডমিন সেটিংস থেকে পরিবর্তন করা যায়)</span>
+              <div className="relative">
+                <input
+                  type={showPin ? 'text' : 'password'}
+                  required
+                  value={inputPin}
+                  onChange={(e) => setInputPin(e.target.value)}
+                  placeholder="পিন লিখুন..."
+                  className="w-full text-center tracking-widest text-lg px-10 py-2.5 border border-neutral-300 rounded-lg focus:border-[#111] outline-none font-mono"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 p-1 cursor-pointer"
+                  title={showPin ? 'পিন লুকান' : 'পিন দেখুন'}
+                >
+                  {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <div className="mt-2 text-center text-[11px] text-neutral-400 flex items-center justify-center gap-1">
+                <Lock className="w-3 h-3" />
+                <span>অননুমোদিত প্রবেশাধিকার কঠোরভাবে সংরক্ষিত</span>
               </div>
             </div>
 

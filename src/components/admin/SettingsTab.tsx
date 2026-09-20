@@ -9,7 +9,10 @@ import {
   Phone, 
   Bell, 
   AlertTriangle,
-  CreditCard
+  CreditCard,
+  Eye,
+  EyeOff,
+  Lock
 } from 'lucide-react';
 import { SiteSettings, Product, Order, CategoryItem, Coupon } from '../../types';
 
@@ -60,6 +63,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   });
 
   const [pinInput, setPinInput] = useState(adminPin);
+  const [showPin, setShowPin] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [importError, setImportError] = useState('');
 
@@ -370,16 +374,27 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">
               অ্যাডমিন পাসওয়ার্ড / পিন (Admin PIN)
             </label>
-            <input
-              type="text"
-              required
-              value={pinInput}
-              onChange={(e) => setPinInput(e.target.value)}
-              placeholder="admin123"
-              className="w-full text-xs px-3 py-2 border border-neutral-300 rounded-lg focus:border-[#111] outline-none font-mono"
-            />
-            <p className="text-[11px] text-neutral-500 mt-1">
-              ডিফল্ট পিন: <strong>admin123</strong>। চাইলে নিজের পছন্দমতো পরিবর্তন করতে পারেন।
+            <div className="relative">
+              <input
+                type={showPin ? 'text' : 'password'}
+                required
+                value={pinInput}
+                onChange={(e) => setPinInput(e.target.value)}
+                placeholder="গোপন পিন লিখুন..."
+                className="w-full text-xs px-3 py-2 pr-9 border border-neutral-300 rounded-lg focus:border-[#111] outline-none font-mono"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPin(!showPin)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 p-0.5 cursor-pointer"
+                title={showPin ? 'পিন লুকান' : 'পিন দেখুন'}
+              >
+                {showPin ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+            <p className="text-[11px] text-neutral-500 mt-1.5 flex items-center gap-1">
+              <Lock className="w-3 h-3 text-neutral-400 shrink-0" />
+              <span>সিকিউরিটির স্বার্থে আপনার পিন গোপন রাখুন। এখান থেকে নতুন পিন সেট করে সংরক্ষণ করতে পারবেন।</span>
             </p>
           </div>
         </div>
