@@ -13,12 +13,24 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   onClose,
   onAddToCart,
 }) => {
+  const [selectedSize, setSelectedSize] = useState<string>('M');
+  const [quantity, setQuantity] = useState<number>(1);
+  const [added, setAdded] = useState(false);
+
+  // Synchronize default size whenever active product changes
+  React.useEffect(() => {
+    if (product?.sizes && product.sizes.length > 0) {
+      setSelectedSize(product.sizes[0]);
+    } else {
+      setSelectedSize('M');
+    }
+    setQuantity(1);
+    setAdded(false);
+  }, [product]);
+
   if (!product) return null;
 
   const defaultSizes = product.sizes || ['S', 'M', 'L', 'XL'];
-  const [selectedSize, setSelectedSize] = useState<string>(defaultSizes[0]);
-  const [quantity, setQuantity] = useState<number>(1);
-  const [added, setAdded] = useState(false);
 
   const handleAdd = () => {
     onAddToCart(product, selectedSize, quantity);

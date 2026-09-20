@@ -82,8 +82,6 @@ export const OrderTrackModal: React.FC<OrderTrackModalProps> = ({
     }
   }, [orders, isOpen]);
 
-  if (!isOpen) return null;
-
   const handleSearch = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!phoneNumber.trim()) return;
@@ -194,6 +192,8 @@ export const OrderTrackModal: React.FC<OrderTrackModalProps> = ({
         };
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
