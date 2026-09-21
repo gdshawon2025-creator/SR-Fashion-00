@@ -1,6 +1,6 @@
 {
-  "name": "SR Fashion",
-  "description": "Online Fashion Store featuring modern designs, trending collections, and quality apparel at affordable prices.",
+  "name": "SR Fashion | SR FASHION.COM",
+  "description": "Discover trendy apparel and stylish collections at SR Fashion (SR FASHION.COM). Premium clothing, panjabi, shirts, and accessories with fast home delivery across Bangladesh.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
