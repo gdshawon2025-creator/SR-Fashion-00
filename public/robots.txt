@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.srfashion.com/sitemap.xml
+Sitemap: https://gdyounus.github.io/SR-Fashion/sitemap.xml
